@@ -1,6 +1,5 @@
 python-telegram-bot==21.7
-Flask
+Flask==3.0.0
 requests
 gTTS
 Pillow
-httpx
