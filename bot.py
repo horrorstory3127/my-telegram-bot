@@ -48,5 +48,13 @@ def run_telegram():
     app.run_polling()
 
 if __name__ == "__main__":
-    threading.Thread(target=lambda: flask_app.run(host="0.0.0.0", port=PORT)).start()
+    import asyncio
+    # Fix for Render
+    def run_flask():
+        flask_app.run(host="0.0.0.0", port=PORT)
+    
+    threading.Thread(target=run_flask, daemon=True).start()
+    
+    # Event loop fix - yahi error tha
+    asyncio.set_event_loop(asyncio.new_event_loop())
     run_telegram()
