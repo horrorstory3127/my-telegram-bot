@@ -1,9 +1,10 @@
 import logging
+import os
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, MessageHandler, filters
 
 # Apna bot token yahan daal dena
-BOT_TOKEN = "8877966729:AAHMZj-4B_Q-z8Zrav5VE2U9luhZoi3jomc"
+BOT_TOKEN = os.getenv ("BOT_TOKEN")
 
 logging.basicConfig(level=logging.INFO)
 
