@@ -3,8 +3,6 @@ from flask import Flask
 from gtts import gTTS
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
-from PIL import Image
-from io import BytesIO
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 
@@ -25,27 +23,21 @@ Usne dheere se kaha - "Tum bhi yahin rahoge..."
 Uske baad kya hua, koi nahi janta."""
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("✅ Bot Ready! /video horror story likh\nEx: /video horror chudail ki kahani")
+    await update.message.reply_text("✅ Bot Ready! /video horror chudail ki kahani")
 
 async def video_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not context.args:
         await update.message.reply_text("Likho: /video chudail ki kahani")
         return
-    
     prompt = " ".join(context.args)
     await update.message.reply_text(f"⏳ Bana raha hu: {prompt}...")
-
     story = generate_story(prompt)
-    
-    # 1. Image from Pollinations (free, no key)
     try:
         img_url = f"https://image.pollinations.ai/prompt/horror%20scary%20{prompt}%20dark%20night%20cinematic?width=1080&height=1920&nologo=true"
         img_data = requests.get(img_url, timeout=30).content
         await update.message.reply_photo(photo=img_data, caption=story[:1000])
-    except Exception as e:
+    except:
         await update.message.reply_text(story)
-
-    # 2. Hindi Voice
     try:
         tts = gTTS(text=story[:350], lang='hi', slow=False)
         tts.save("voice.mp3")
