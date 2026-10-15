@@ -6,43 +6,28 @@ from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 PIXABAY_KEY = os.getenv("PIXABAY_API_KEY")
 
-flask_app = Flask(__name__)
-@flask_app.route('/')
-def home(): return "Bot Live"
-def run_flask():
-    flask_app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 10000)))
-
-async def start(update, context):
-    await update.message.reply_text("Bot is working ✅\n/video horror story")
+fa = Flask(__name__)
+@fa.route('/')
+def h(): return "Live"
+def rf(): fa.run(host='0.0.0.0', port=int(os.environ.get("PORT",10000)))
 
 async def video(update, context):
-    prompt = " ".join(context.args) or "horror"
-    await update.message.reply_text(f"🎥 Dhoond raha hu: {prompt}")
+    q = " ".join(context.args) or "horror"
+    await update.message.reply_text(f"🎥 Dhoond raha hu: {q}")
     try:
-        # Pixabay search
-        api_url = f"https://pixabay.com/api/videos/?key={PIXABAY_KEY}&q={prompt}&per_page=3&safesearch=true"
-        data = requests.get(api_url, timeout=20).json()
-
-        if not data.get("hits"):
-            await update.message.reply_text(f"Video nahi mila: {prompt}. Try: ghost, haunted house")
-            return
-
-        video_url = data["hits"][0]["videos"]["tiny"]["url"] # tiny is faster
-        await update.message.reply_text("📥 Video download kar raha hu...")
-
-        # Download video locally then upload to Telegram
-        r = requests.get(video_url, timeout=60)
-        with open("/tmp/video.mp4", "wb") as f:
-            f.write(r.content)
-
-        await update.message.reply_video(video=open("/tmp/video.mp4", "rb"), caption=f"{prompt} 👻")
-
+        d = requests.get(f"https://pixabay.com/api/videos/?key={PIXABAY_KEY}&q={q}&per_page=3", timeout=20).json()
+        if not d.get("hits"):
+            await update.message.reply_text("Video nahi mila"); return
+        vurl = d["hits"][0]["videos"]["tiny"]["url"]
+        data = requests.get(vurl, timeout=60).content
+        open("/tmp/v.mp4","wb").write(data)
+        await update.message.reply_video(video=open("/tmp/v.mp4","rb"), caption=f"{q} 👻")
     except Exception as e:
-        await update.message.reply_text(f"Error: {e}\n\nCheck: Render > Environment me PIXABAY_API_KEY hai kya?")
+        await update.message.reply_text(f"Error: {e}")
 
 if __name__ == "__main__":
-    threading.Thread(target=run_flask, daemon=True).start()
+    threading.Thread(target=rf, daemon=True).start()
     app = ApplicationBuilder().token(BOT_TOKEN).build()
-    app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("video", video))
+    app.add_handler(CommandHandler("start", video))
     app.run_polling()
