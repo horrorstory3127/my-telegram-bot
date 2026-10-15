@@ -18,7 +18,7 @@ async def video(update, context):
         d = requests.get(f"https://pixabay.com/api/videos/?key={PIXABAY_KEY}&q={q}&per_page=3", timeout=20).json()
         if not d.get("hits"):
             await update.message.reply_text("Video nahi mila"); return
-        vurl = d["hits"][0]["videos"]["tiny"]["url"]
+        vurl = d["hits"][0]["videos"]["medium"]["url"]
         data = requests.get(vurl, timeout=60).content
         open("/tmp/v.mp4","wb").write(data)
         await update.message.reply_video(video=open("/tmp/v.mp4","rb"), caption=f"{q} 👻")
