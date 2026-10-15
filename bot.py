@@ -1,47 +1,37 @@
-import logging
-import os
-import requests
+import os, threading, requests
+from flask import Flask
 from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, MessageHandler, filters
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 PIXABAY_KEY = os.getenv("PIXABAY_API_KEY")
 
-logging.basicConfig(level=logging.INFO)
+flask_app = Flask(__name__)
+@flask_app.route('/')
+def home(): return "Bot Live"
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(f"Hello {update.effective_user.first_name}! Bot is working ✅\n\n/video bhoot ki kahani - video ke liye")
+def run_flask():
+    flask_app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 10000)))
 
-async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(f"Tune bola: {update.message.text}\nVideo ke liye /video likho")
+async def start(update, context):
+    await update.message.reply_text("Hello Rohit! Bot is working ✅\n/video horror story likh video aayegi")
 
-async def video(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    prompt = " ".join(context.args)
-    if not prompt:
-        await update.message.reply_text("Bhai prompt to de! \nJaise: /video bhootiya haveli")
-        return
-
-    await update.message.reply_text(f"🎥 Video dhoond raha hu: '{prompt}'...")
-
+async def video(update, context):
+    prompt = " ".join(context.args) or "horror"
+    await update.message.reply_text(f"🎥 Dhoond raha hu: {prompt}")
     try:
-        # Pixabay Video API
-        url = f"https://pixabay.com/api/videos/?key={PIXABAY_KEY}&q={prompt}&per_page=3"
-        r = requests.get(url, timeout=15)
-        data = r.json()
-
-        if data.get("hits"):
-            video_url = data["hits"][0]["videos"]["medium"]["url"]
-            await update.message.reply_video(video_url, caption=f"Ye le teri video: {prompt} 👻")
+        r = requests.get(f"https://pixabay.com/api/videos/?key={PIXABAY_KEY}&q={prompt}&per_page=3", timeout=20).json()
+        if r.get("hits"):
+            url = r["hits"][0]["videos"]["medium"]["url"]
+            await update.message.reply_video(url, caption=f"{prompt} 👻")
         else:
-            await update.message.reply_text(f"Is prompt pe video nahi mila: {prompt}\nDusra prompt try kar jaise: horror, ghost, haunted house")
-
+            await update.message.reply_text("Video nahi mila, dusra naam try kar: ghost, haunted")
     except Exception as e:
-        await update.message.reply_text(f"Error: {e}\nPIXABAY key check kar Koyeb me!")
+        await update.message.reply_text(f"Error: {e}")
 
 if __name__ == "__main__":
+    threading.Thread(target=run_flask, daemon=True).start()
     app = ApplicationBuilder().token(BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("video", video))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, echo))
-    print("Bot chal raha hai...")
     app.run_polling()
