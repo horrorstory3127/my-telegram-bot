@@ -1,56 +1,64 @@
 import os, requests, threading
-from telegram import Update
-from telegram.ext import Application, CommandHandler, ContextTypes
 from flask import Flask
 from gtts import gTTS
+from telegram import Update
+from telegram.ext import Application, CommandHandler, ContextTypes
 from PIL import Image
 from io import BytesIO
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 
+app_flask = Flask(__name__)
+@app_flask.route('/')
+def home():
+    return "Bot Running!"
+
 def generate_story(prompt):
-    if "cartoon" in prompt.lower():
-        return f"Ek samay ki baat hai, {prompt} me ek chota sher tha. Wo bahut darpok tha. Ek din usne himmat dikhai aur jungle ka raja ban gaya."
-    else:
-        return f"Raat ke 2 baje, {prompt}. Ek ladka sunsan haveli me gaya. Darwaza khud band ho gaya. Piche se kisi ne hasne ki awaz aayi. Jab usne peeche dekha toh... waha ek safed saree wali chudail khadi thi!"
+    return f"""Ek raat ki baat hai, {prompt}...
 
-async def start(update, context):
-    await update.message.reply_text("✅ Bot Ready! /video horror story likh")
+Gaon ke log kehte the uss purane peepal ke ped ke neeche koi rehta hai. Raat ke 2 baje jab hawa chalti hai toh ek aurat ki siskari sunai deti hai.
 
-async def video(update, context):
-    prompt = " ".join(context.args) or "horror story"
-    await update.message.reply_text(f"🎬 Bana raha hu: {prompt}...")
+Maine himmat karke wahan gaya. Wahan ek safed saree me ek aurat khadi thi, uske paair ulte the...
 
+Usne dheere se kaha - "Tum bhi yahin rahoge..."
+
+Uske baad kya hua, koi nahi janta."""
+
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("✅ Bot Ready! /video horror story likh\nEx: /video horror chudail ki kahani")
+
+async def video_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not context.args:
+        await update.message.reply_text("Likho: /video chudail ki kahani")
+        return
+    
+    prompt = " ".join(context.args)
+    await update.message.reply_text(f"⏳ Bana raha hu: {prompt}...")
+
+    story = generate_story(prompt)
+    
+    # 1. Image from Pollinations (free, no key)
     try:
-        story = generate_story(prompt)
-        # 1. Voice
-        audio_path = "/tmp/voice.mp3"
-        gTTS(text=story, lang='hi').save(audio_path)
-        
-        # 2. Image (AI se)
-        style = "cute cartoon" if "cartoon" in prompt.lower() else "horror, dark, cinematic, ultra realistic"
-        img_url = f"https://image.pollinations.ai/prompt/{prompt} {style}"
-        r = requests.get(img_url, timeout=30)
-        img_path = "/tmp/thumb.jpg"
-        Image.open(BytesIO(r.content)).save(img_path)
-
-        # 3. Bhej de - YT ke liye Photo + Voice + Story
-        await update.message.reply_photo(photo=open(img_path,"rb"), caption=f"{story}\n\n#horror #story")
-        await update.message.reply_audio(audio=open(audio_path,"rb"), caption="Voiceover")
-        await update.message.reply_text("Abhi Photo+Voice bhej raha hu, ye wala 100% chalega. Isko YT pe daalne ke liye bas InShot me jod de - full video ban jayega. Agla step me auto-video jod denge.")
+        img_url = f"https://image.pollinations.ai/prompt/horror%20scary%20{prompt}%20dark%20night%20cinematic?width=1080&height=1920&nologo=true"
+        img_data = requests.get(img_url, timeout=30).content
+        await update.message.reply_photo(photo=img_data, caption=story[:1000])
     except Exception as e:
-        await update.message.reply_text(f"Error: {e}")
+        await update.message.reply_text(story)
 
-flask_app = Flask(__name__)
-@flask_app.route('/') 
-def home(): return "OK"
+    # 2. Hindi Voice
+    try:
+        tts = gTTS(text=story[:350], lang='hi', slow=False)
+        tts.save("voice.mp3")
+        await update.message.reply_voice(voice=open("voice.mp3","rb"))
+    except:
+        pass
 
-def run_flask():
-    flask_app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
+def run_bot():
+    application = Application.builder().token(BOT_TOKEN).build()
+    application.add_handler(CommandHandler("start", start))
+    application.add_handler(CommandHandler("video", video_cmd))
+    application.run_polling()
 
 if __name__ == "__main__":
-    threading.Thread(target=run_flask, daemon=True).start()
-    app = Application.builder().token(BOT_TOKEN).build()
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("video", video))
-    app.run_polling()
+    threading.Thread(target=lambda: app_flask.run(host="0.0.0.0", port=10000)).start()
+    run_bot()
