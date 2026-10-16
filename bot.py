@@ -27,12 +27,12 @@ def get_images(query, n=3):
         photos = data.get('photos', [])
         if not photos:
             print(f"Pexels Error/Empty: {data}")
-            return []
+            return ["https://images.pexels.com/photos/1366919/pexels-photo-1366919.jpeg"]
         urls = [p["src"]["large"] for p in photos if "src" in p]
         return urls
     except Exception as e:
         print(f"get_images failed: {e}")
-        return []
+        return ["https://images.pexels.com/photos/1366919/pexels-photo-1366919.jpeg"]
 def make_video(script_text, output="/tmp/final.mp4"):
     tts = gTTS(text=script_text, lang='hi', slow=False)
     tts.save("/tmp/voice.mp3")
