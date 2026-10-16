@@ -21,7 +21,7 @@ def run_flask():
 
 def get_images(query, n=3):
     try:
-        headers = {"Authorization": PEXELS_KEY}
+        headers = {"Authorization": PEXELS_API_KEY}
         r = requests.get(f"https://api.pexels.com/v1/search?query={query}&per_page={n}&orientation=landscape", headers=headers, timeout=15)
         data = r.json()
         photos = data.get('photos', [])
