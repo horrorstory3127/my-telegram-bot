@@ -3,3 +3,6 @@ Flask==3.0.0
 requests
 gTTS
 Pillow
+moviepy==1.0.3
+openai
+imageio-ffmpeg
