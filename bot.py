@@ -20,17 +20,19 @@ def run_flask():
     app.run(host="0.0.0.0", port=port)
 
 def get_images(query, n=3):
-    headers = {"Authorization": PEXELS_KEY}
-    r = requests.get(f"https://api.pexels.com/v1/search?query={query}&per_page={n}&orientation=landscape", headers=headers, timeout=15)
-    data = r.json()
-    urls = [p['src']['large'] for p in data['photos']]
-    paths = []
-    for i, url in enumerate(urls):
-        p = f"/tmp/{i}.jpg"
-        open(p,'wb').write(requests.get(url, timeout=15).content)
-        paths.append(p)
-    return paths
-
+    try:
+        headers = {"Authorization": PEXELS_KEY}
+        r = requests.get(f"https://api.pexels.com/v1/search?query={query}&per_page={n}&orientation=landscape", headers=headers, timeout=15)
+        data = r.json()
+        photos = data.get('photos', [])
+        if not photos:
+            print(f"Pexels Error/Empty: {data}")
+            return []
+        urls = [p["src"]["large"] for p in photos if "src" in p]
+        return urls
+    except Exception as e:
+        print(f"get_images failed: {e}")
+        return []
 def make_video(script_text, output="/tmp/final.mp4"):
     tts = gTTS(text=script_text, lang='hi', slow=False)
     tts.save("/tmp/voice.mp3")
