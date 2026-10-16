@@ -1,6 +1,7 @@
 import os
 import threading
-import requests, random
+import asyncio
+import requests
 from flask import Flask
 from gtts import gTTS
 from PIL import Image, ImageFilter
@@ -14,10 +15,6 @@ app = Flask(__name__)
 @app.route('/')
 def home():
     return "Bot is running!"
-
-def run_flask():
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host="0.0.0.0", port=port)
 
 def get_images(query, n=5):
     headers = {"Authorization": PEXELS_KEY}
@@ -34,8 +31,6 @@ def get_images(query, n=5):
 def make_video(script_text, output="final.mp4"):
     tts = gTTS(text=script_text, lang='hi', slow=False)
     tts.save("/tmp/voice.mp3")
-    # yaha tera bacha hua video logic ayega
-    # simple ke liye image slideshow bana dete hain
     clips = [ImageClip(p).set_duration(2) for p in get_images(script_text, 3)]
     video = concatenate_videoclips(clips, method="compose")
     audioclip = AudioFileClip("/tmp/voice.mp3")
@@ -55,10 +50,15 @@ async def handle_text(update, context):
     except Exception as e:
         await update.message.reply_text(f"Error: {e}")
 
-if __name__ == "__main__":
-    threading.Thread(target=run_flask).start()
+def run_bot():
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
     application = ApplicationBuilder().token(BOT_TOKEN).build()
     application.add_handler(CommandHandler("start", start))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
-    print("Bot chal raha hai...")
     application.run_polling()
+
+if __name__ == "__main__":
+    threading.Thread(target=run_bot).start()
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
