@@ -4,7 +4,6 @@ import asyncio
 import requests
 from flask import Flask
 from gtts import gTTS
-from PIL import Image, ImageFilter
 from moviepy.editor import *
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters
 
@@ -16,7 +15,11 @@ app = Flask(__name__)
 def home():
     return "Bot is running!"
 
-def get_images(query, n=5):
+def run_flask():
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
+
+def get_images(query, n=3):
     headers = {"Authorization": PEXELS_KEY}
     r = requests.get(f"https://api.pexels.com/v1/search?query={query}&per_page={n}&orientation=landscape", headers=headers, timeout=15)
     data = r.json()
@@ -28,7 +31,7 @@ def get_images(query, n=5):
         paths.append(p)
     return paths
 
-def make_video(script_text, output="final.mp4"):
+def make_video(script_text, output="/tmp/final.mp4"):
     tts = gTTS(text=script_text, lang='hi', slow=False)
     tts.save("/tmp/voice.mp3")
     clips = [ImageClip(p).set_duration(2) for p in get_images(script_text, 3)]
@@ -39,7 +42,7 @@ def make_video(script_text, output="final.mp4"):
     return output
 
 async def start(update, context):
-    await update.message.reply_text("Bhai video ke liye script bhejo!")
+    await update.message.reply_text("Bhai script bhejo, video bana dunga!")
 
 async def handle_text(update, context):
     script = update.message.text
@@ -56,9 +59,8 @@ def run_bot():
     application = ApplicationBuilder().token(BOT_TOKEN).build()
     application.add_handler(CommandHandler("start", start))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
-    application.run_polling()
+    application.run_polling(stop_signals=None)
 
 if __name__ == "__main__":
     threading.Thread(target=run_bot).start()
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host="0.0.0.0", port=port)
+    run_flask()
