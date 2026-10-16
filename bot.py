@@ -5,6 +5,9 @@ from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 from moviepy.editor import ImageClip, concatenate_videoclips, AudioFileClip
 from PIL import Image
+# Compatibility fix for Pillow 10+
+if not hasattr(Image, 'ANTIALIAS'):
+    Image.ANTIALIAS = Image.LANCZOS
 from io import BytesIO
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
