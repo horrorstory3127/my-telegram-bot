@@ -1,7 +1,6 @@
-Flask
-requests
-gTTS
+Flask==2.3.3
+requests==2.31.0
+gTTS==2.5.1
 moviepy==1.0.3
 python-telegram-bot==20.7
-imageio
-imageio-ffmpeg
+imageio-ffmpeg==0.4.8
